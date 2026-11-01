@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2563eb">
+<meta name="description" content="按 GB/T 7714-2015 一键生成规范参考文献，纯本地运行，不联网。">
+<title>参考文献一键格式化 · GB/T 7714-2015</title>
+<style>
+  :root{
+    --bg:#f2f5f9; --card:#ffffff; --ink:#111827; --muted:#6b7280;
+    --accent:#2563eb; --accent-dark:#1d4ed8; --line:#e2e8f0;
+    --warn:#c2410c; --danger:#dc2626; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); padding:20px 14px 60px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    font-size:16px; line-height:1.6; -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+  header{margin-bottom:14px}
+  h1{font-size:21px;line-height:1.35;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:13.5px;margin:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .tab{border:1px solid var(--line);background:#fff;color:#374151;border-radius:999px;padding:7px 14px;font-size:14px;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s}
+  .tab:hover{border-color:#bfdbfe}
+  .tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .field{grid-column:1 / -1;display:flex;flex-direction:column;gap:4px;min-width:0}
+  .field.half{grid-column:span 1}
+  label{font-size:13px;font-weight:600;color:#374151}
+  label .req{color:var(--danger)}
+  input[type=text]{width:100%;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:16px;font-family:inherit;color:var(--ink);background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+  input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  input[type=text].bad{border-color:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,.10)}
+  .hint{font-size:12px;color:var(--muted);line-height:1.45}
+  .row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  button.primary,button.ghost{font-size:14px;border-radius:9px;padding:9px 16px;cursor:pointer;border:1px solid transparent;font-family:inherit;transition:background .15s,border-color .15s}
+  button.primary{background:var(--accent);color:#fff}
+  button.primary:hover{background:var(--accent-dark)}
+  button.ghost{background:#fff;border-color:var(--line);color:#374151}
+  button.ghost:hover{border-color:#94a3b8}
+  .preview-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .sec-title{font-size:14px;font-weight:700;color:#111827}
+  .badge{display:inline-block;background:var(--accent);color:#fff;font-size:12px;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:2px}
+  .preview{background:#f8fafc;border-left:3px solid var(--accent);border-radius:8px;padding:12px;font-size:14.5px;line-height:1.75;min-height:58px;word-break:break-word;white-space:pre-wrap}
+  .preview.empty{color:var(--muted);border-left-color:#cbd5e1}
+  .status{font-size:12.5px;color:var(--warn);flex:none;text-align:right}
+  .status.ok{color:var(--muted)}
+  .list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;gap:10px;align-items:flex-start;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .item .idx{color:var(--muted);font-size:13px;flex:none;padding-top:1px}
+  .item .txt{flex:1;font-size:14px;line-height:1.7;word-break:break-word}
+  .item .del{flex:none;background:none;border:none;color:#9ca3af;cursor:pointer;font-size:13px;padding:2px 4px;font-family:inherit}
+  .item .del:hover{color:var(--danger)}
+  .switch{display:flex;align-items:center;gap:8px;font-size:13px;color:#4b5563;font-weight:400;margin-top:16px;cursor:pointer}
+  .switch input{width:16px;height:16px;accent-color:var(--accent)}
+  .foot{text-align:center;color:#9ca3af;font-size:12px;margin-top:22px}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);background:#111827;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:9;max-width:88vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media (max-width:360px){ .grid{grid-template-columns:1fr} .field.half{grid-column:1/-1} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>参考文献一键格式化</h1>
+    <p class="sub">按《GB/T 7714-2015 信息与文献 参考文献著录规则》生成引用 · 纯本地运行，不联网、不上传</p>
+  </header>
+
+  <section class="card">
+    <div class="tabs" id="tabs" role="tablist" aria-label="文献类型">
+      <button type="button" class="tab" data-type="J"  role="tab" aria-selected="true">期刊 [J]</button>
+      <button type="button" class="tab" data-type="M"  role="tab" aria-selected="false">专著 [M]</button>
+      <button type="button" class="tab" data-type="D"  role="tab" aria-selected="false">学位论文 [D]</button>
+      <button type="button" class="tab" data-type="C"  role="tab" aria-selected="false">会议论文 [C]</button>
+      <button type="button" class="tab" data-type="EB" role="tab" aria-selected="false">网络资源 [EB/OL]</button>
+    </div>
+
+    <div class="grid" id="fields"></div>
+
+    <label class="switch">
+      <input type="checkbox" id="capWest">
+      <span>西文作者姓氏大写（SMITH J A，多数高校要求）</span>
+    </label>
+  </section>
+
+  <section class="card">
+    <div class="preview-head">
+      <span class="sec-title">预览</span>
+      <span class="status" id="status"></span>
+    </div>
+    <div class="preview empty" id="preview" aria-live="polite">在上方填写信息，这里会实时生成规范引用。</div>
+    <div class="row">
+      <button type="button" class="primary" id="btn-add">加入引用列表</button>
+      <button type="button" class="ghost" id="btn-copy-one">复制本次结果</button>
+      <button type="button" class="ghost" id="btn-demo">填入示例</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="preview-head">
+      <span class="sec-title">引用列表<span class="badge" id="count">0</span></span>
+    </div>
+    <ol class="list" id="list"></ol>
+    <p class="hint" id="empty">还没有条目。填好一条 → 点「加入引用列表」。</p>
+    <div class="row">
+      <button type="button" class="primary" id="btn-copy-all">复制全部</button>
+      <button type="button" class="ghost" id="btn-clear">清空列表</button>
+    </div>
+  </section>
+
+  <p class="foot"><a href="./index.html" style="color:#94a3b8;text-decoration:none">← 返回介绍页</a></p>
+<p class="foot">纯前端运行 · 数据只保存在你本机浏览器 · 不联网、不上传、不留痕迹</p>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="text-align:center;color:#c2410c">需要启用 JavaScript 才能使用本工具。</p></noscript>
+
+<script>
+/* ===================== PURE LOGIC START ===================== */
+var TYPES = {
+  J: {
+    key: 'J', label: '期刊论文', tag: 'J',
+    fields: [
+      { k: 'authors', label: '作者', ph: '李明, 王强, 张伟, 刘洋', hint: '多位作者用逗号 / 分号 / 顿号分隔；满 3 位以上自动加「等」' },
+      { k: 'title',   label: '论文标题', ph: '基于深度学习的图像识别方法研究', required: true },
+      { k: 'journal', label: '刊名', ph: '计算机应用研究', required: true },
+      { k: 'year',    label: '年', ph: '2022', required: true, half: true },
+      { k: 'volume',  label: '卷', ph: '39', half: true },
+      { k: 'issue',   label: '期', ph: '7', half: true },
+      { k: 'pages',   label: '页码', ph: '2100-2105', half: true }
+    ]
+  },
+  M: {
+    key: 'M', label: '专著', tag: 'M',
+    fields: [
+      { k: 'authors', label: '作者', ph: '张三, 李四', hint: '没有作者可留空，会直接以书名开头' },
+      { k: 'title', label: '书名', ph: '图书馆学概论', required: true },
+      { k: 'edition', label: '版本', ph: '2', half: true, hint: '不填即第 1 版' },
+      { k: 'place', label: '出版地', ph: '北京', required: true, half: true },
+      { k: 'publisher', label: '出版者', ph: '高等教育出版社', required: true, half: true },
+      { k: 'year', label: '出版年', ph: '2020', required: true, half: true },
+      { k: 'pages', label: '引文页码', ph: '25-30', half: true, hint: '可选' }
+    ]
+  },
+  D: {
+    key: 'D', label: '学位论文', tag: 'D',
+    fields: [
+      { k: 'authors', label: '作者', ph: '王五', required: true },
+      { k: 'title', label: '论文题目', ph: '面向在线教育的推荐算法研究', required: true },
+      { k: 'place', label: '保存地', ph: '北京', required: true, half: true, hint: '通常是学校所在城市' },
+      { k: 'school', label: '授予单位', ph: '北京大学', required: true, half: true },
+      { k: 'year', label: '年份', ph: '2022', required: true, half: true }
+    ]
+  },
+  C: {
+    key: 'C', label: '会议论文', tag: 'C',
+    fields: [
+      { k: 'authors', label: '作者', ph: '赵六, 钱七' },
+      { k: 'title', label: '论文标题', ph: '一种面向移动端的图像压缩方法', required: true },
+      { k: 'proceedings', label: '论文集 / 会议录名称', ph: '第12届全国图像图形学术会议论文集', required: true },
+      { k: 'place', label: '出版地', ph: '上海', half: true },
+      { k: 'publisher', label: '出版者', ph: '上海交通大学出版社', half: true },
+      { k: 'year', label: '出版年', ph: '2021', required: true, half: true },
+      { k: 'pages', label: '页码', ph: '12-18', half: true }
+    ]
+  },
+  EB: {
+    key: 'EB', label: '网络资源', tag: 'EB/OL',
+    fields: [
+      { k: 'authors', label: '责任者', ph: '中国互联网络信息中心', hint: '机构作者填机构全称，没有可留空' },
+      { k: 'title', label: '标题', ph: '第51次中国互联网络发展状况统计报告', required: true },
+      { k: 'updated', label: '发布日期', ph: '2023-03-02', half: true, hint: '格式 2023-03-02' },
+      { k: 'cited', label: '引用日期', ph: '2024-05-01', required: true, half: true, hint: '格式 2024-05-01' },
+      { k: 'url', label: '网址', ph: 'https://www.cnnic.net.cn/n4/2023/0303/c88-10757.html', required: true }
+    ]
+  }
+};
+
+var DEMO = {
+  J: { authors: '李明, 王强, 张伟, 刘洋', title: '基于深度学习的图像识别方法研究', journal: '计算机应用研究', year: '2022', volume: '39', issue: '7', pages: '2100-2105' },
+  M: { authors: '张三, 李四', title: '图书馆学概论', edition: '2', place: '北京', publisher: '高等教育出版社', year: '2020', pages: '25-30' },
+  D: { authors: '王五', title: '面向在线教育的推荐算法研究', place: '北京', school: '北京大学', year: '2022' },
+  C: { authors: '赵六, 钱七', title: '一种面向移动端的图像压缩方法', proceedings: '第12届全国图像图形学术会议论文集', place: '上海', publisher: '上海交通大学出版社', year: '2021', pages: '12-18' },
+  EB: { authors: '中国互联网络信息中心', title: '第51次中国互联网络发展状况统计报告', updated: '2023-03-02', cited: '2024-05-01', url: 'https://www.cnnic.net.cn/n4/2023/0303/c88-10757.html' }
+};
+
+function s(v) { return v == null ? '' : String(v).trim(); }
+
+function hasCJK(str) { return /[\u3400-\u9FFF\uF900-\uFAFF]/.test(str); }
+
+/* 单条作者：中文原样；西文转「姓 名首字母」，并尽量识别「名在前」的写法 */
+function fmtAuthor(raw, capWest) {
+  var name = s(raw).replace(/\s+/g, ' ');
+  if (!name) return '';
+  if (hasCJK(name)) return name.replace(/\s+/g, '');
+
+  var tokens = name.replace(/[.,]/g, ' ').split(/\s+/).filter(Boolean);
+  if (!tokens.length) return '';
+
+  var surname, given, last = tokens[tokens.length - 1];
+  if (tokens.length >= 2 && tokens[0].length === 1) {
+    surname = last; given = tokens.slice(0, -1);          /* 例：J Smith / J. A. Smith */
+  } else if (tokens.length >= 2 && last.length > 1) {
+    surname = last; given = tokens.slice(0, -1);          /* 例：John A Smith */
+  } else {
+    surname = tokens[0]; given = tokens.slice(1);         /* 例：Smith J A */
+  }
+
+  var ini = given.map(function (t) { return t.charAt(0).toUpperCase(); }).filter(Boolean);
+  var sur = capWest ? surname.toUpperCase() : surname.charAt(0).toUpperCase() + surname.slice(1).toLowerCase();
+  return [sur].concat(ini).join(' ');
+}
+
+/* 作者串：超过 3 位只留前 3 位 + 「等」/「et al.」 */
+function fmtAuthors(str, capWest) {
+  var list = s(str).split(/[,，;；、\n\r\t]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+  if (!list.length) return '';
+
+  var out = list.map(function (a) { return fmtAuthor(a, capWest); }).filter(Boolean);
+  if (!out.length) return '';
+  if (out.length > 3) {
+    var head = out.slice(0, 3);
+    var etal = head.some(hasCJK) ? '等' : 'et al.';
+    return head.join(', ') + ', ' + etal;
+  }
+  return out.join(', ');
+}
+
+/* 拼接出版信息，缺字段时不留下孤立标点 */
+function pubSeg(place, publisher) {
+  var p = s(place), u = s(publisher);
+  if (u && p) return p + ': ' + u;
+  return u || p;
+}
+
+function formatEntry(typeKey, data, opts) {
+  var o = opts || {};
+  var capWest = o.capWest !== false;
+  var d = data || {};
+  var t = TYPES[typeKey] ? typeKey : 'J';
+
+  var au = fmtAuthors(d.authors, capWest);
+  /* 「et al.」本身已带句点，再拼「.」会变成 et al.. —— 这里必须判一下 */
+  var head = au ? (au.slice(-1) === '.' ? au + ' ' : au + '. ') : '';
+  var title = s(d.title);
+  var year = s(d.year);
+  var pages = s(d.pages);
+  var out;
+
+  if (t === 'J') {
+    out = head + title + '[J]. ' + s(d.journal);
+    if (year) out += ', ' + year;
+    if (s(d.volume)) out += ', ' + s(d.volume);
+    if (s(d.issue)) out += '(' + s(d.issue) + ')';
+    if (pages) out += ': ' + pages;
+    return out + '.';
+  }
+
+  if (t === 'M') {
+    out = head + title + '[M]. ';
+    if (s(d.edition)) out += s(d.edition) + '版. ';
+    var seg = pubSeg(d.place, d.publisher);
+    if (seg) out += seg + ', ';
+    out += year;
+    if (pages) out += ': ' + pages;
+    return out + '.';
+  }
+
+  if (t === 'D') {
+    out = head + title + '[D]. ';
+    if (s(d.place)) out += s(d.place) + ': ';
+    out += s(d.school) + ', ' + year;
+    return out + '.';
+  }
+
+  if (t === 'C') {
+    out = head + title + '[C]//' + s(d.proceedings) + '. ';
+    var seg2 = pubSeg(d.place, d.publisher);
+    if (seg2) out += seg2 + ', ';
+    out += year;
+    if (pages) out += ': ' + pages;
+    return out + '.';
+  }
+
+  if (t === 'EB') {
+    out = head + title + '[EB/OL]. ';
+    if (s(d.updated)) out += '(' + s(d.updated) + ')';
+    if (s(d.cited)) out += '[' + s(d.cited) + ']';
+    out += '. ' + s(d.url);
+    return out + '.';
+  }
+
+  return '';
+}
+
+/* 校验：返回缺什么、格式哪里可疑 */
+function validate(typeKey, data) {
+  var t = TYPES[typeKey] || TYPES.J;
+  var d = data || {};
+  var missing = [], missingKeys = [], notes = [];
+
+  t.fields.forEach(function (f) {
+    if (f.required && !s(d[f.k])) { missing.push(f.label); missingKeys.push(f.k); }
+  });
+
+  var year = s(d.year);
+  if (year && !/^\d{4}$/.test(year)) notes.push('「' + (t.fields.filter(function (f) { return f.k === 'year'; })[0] || {label: '年'}).label + '」应写 4 位数字，当前是「' + year + '」');
+
+  if (typeKey === 'EB') {
+    ['updated', 'cited'].forEach(function (k) {
+      var v = s(d[k]);
+      if (v && !/^\d{4}-\d{1,2}-\d{1,2}$/.test(v)) notes.push((k === 'updated' ? '发布日期' : '引用日期') + '建议写成 2023-03-02 这种格式');
+    });
+    var url = s(d.url);
+    if (url && !/^https?:\/\//i.test(url)) notes.push('网址需要以 http:// 或 https:// 开头');
+  }
+
+  return { ok: missing.length === 0, missing: missing, missingKeys: missingKeys, notes: notes };
+}
+
+function formatAll(entries, opts) {
+  return (entries || []).map(function (e, i) {
+    return '[' + (i + 1) + '] ' + formatEntry(e.type, e.data, opts);
+  }).join('\n');
+}
+/* ===================== PURE LOGIC END ===================== */
+
+(function () {
+  'use strict';
+
+  var LS_E = 'gb7714.entries.v1', LS_D = 'gb7714.draft.v1', LS_O = 'gb7714.opt.v1';
+  var store = {
+    get: function (k, fb) { try { var v = localStorage.getItem(k); return v == null ? fb : JSON.parse(v); } catch (e) { return fb; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 隐私模式可能禁用存储，忽略即可 */ } }
+  };
+
+  var opt = store.get(LS_O, {}) || {};
+  var state = {
+    type: TYPES[opt.type] ? opt.type : 'J',
+    entries: store.get(LS_E, []),
+    drafts: store.get(LS_D, {}),
+    capWest: opt.capWest !== false
+  };
+  if (!Array.isArray(state.entries)) state.entries = [];
+  state.entries = state.entries.filter(function (e) { return e && TYPES[e.type] && e.data; });
+  if (!state.drafts || typeof state.drafts !== 'object') state.drafts = {};
+
+  var $ = function (id) { return document.getElementById(id); };
+  var tabsEl = $('tabs'), fieldsEl = $('fields'), previewEl = $('preview'), statusEl = $('status');
+  var listEl = $('list'), countEl = $('count'), emptyEl = $('empty');
+  var capBox = $('capWest'), toastEl = $('toast');
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  var toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1900);
+  }
+
+  function persist() {
+    store.set(LS_E, state.entries);
+    store.set(LS_D, state.drafts);
+    store.set(LS_O, { capWest: state.capWest, type: state.type });
+  }
+
+  /* ---------- 表单 ---------- */
+  function renderForm() {
+    var t = TYPES[state.type];
+    var draft = state.drafts[state.type] || {};
+    fieldsEl.innerHTML = '';
+
+    t.fields.forEach(function (f) {
+      var wrap = el('div', 'field' + (f.half ? ' half' : ''));
+      var lab = el('label', null, null);
+      lab.setAttribute('for', 'f-' + f.k);
+      lab.appendChild(document.createTextNode(f.label));
+      if (f.required) lab.appendChild(el('span', 'req', ' *'));
+
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'f-' + f.k;
+      input.name = f.k;
+      input.value = draft[f.k] || '';
+      input.placeholder = f.ph || '';
+      input.setAttribute('autocomplete', 'off');
+      input.setAttribute('spellcheck', 'false');
+
+      wrap.appendChild(lab);
+      wrap.appendChild(input);
+      if (f.hint) wrap.appendChild(el('div', 'hint', f.hint));
+      fieldsEl.appendChild(wrap);
+    });
+
+    Array.prototype.forEach.call(tabsEl.querySelectorAll('.tab'), function (b) {
+      b.setAttribute('aria-selected', b.getAttribute('data-type') === state.type ? 'true' : 'false');
+    });
+  }
+
+  function readForm() {
+    var data = {};
+    TYPES[state.type].fields.forEach(function (f) {
+      var inp = $('f-' + f.k);
+      data[f.k] = inp ? inp.value : '';
+    });
+    return data;
+  }
+
+  function saveDraft() {
+    state.drafts[state.type] = readForm();
+    store.set(LS_D, state.drafts);
+  }
+
+  function flash(keys) {
+    keys.forEach(function (k) {
+      var inp = $('f-' + k);
+      if (!inp) return;
+      inp.classList.add('bad');
+      setTimeout(function () { inp.classList.remove('bad'); }, 1400);
+    });
+  }
+
+  /* ---------- 预览 ---------- */
+  function updatePreview() {
+    var data = readForm();
+    var v = validate(state.type, data);
+
+    if (v.missing.length) {
+      previewEl.classList.add('empty');
+      previewEl.textContent = '还差：' + v.missing.join('、') + '（填完会自动生成）';
+      statusEl.textContent = '';
+      statusEl.className = 'status';
+      return;
+    }
+
+    previewEl.classList.remove('empty');
+    previewEl.textContent = '[' + (state.entries.length + 1) + '] ' +
+      formatEntry(state.type, data, { capWest: state.capWest });
+
+    if (v.notes.length) {
+      statusEl.textContent = '⚠ ' + v.notes[0];
+      statusEl.className = 'status';
+    } else {
+      statusEl.textContent = '✓ 格式自检通过';
+      statusEl.className = 'status ok';
+    }
+  }
+
+  /* ---------- 列表 ---------- */
+  function renderList() {
+    listEl.innerHTML = '';
+
+    state.entries.forEach(function (e, i) {
+      var li = el('li', 'item');
+      li.appendChild(el('span', 'idx', '[' + (i + 1) + ']'));
+
+      var txt = el('span', 'txt', '');
+      try {
+        txt.textContent = formatEntry(e.type, e.data, { capWest: state.capWest });
+      } catch (err) {
+        txt.textContent = '（这条数据有误，请删除后重填）';
+      }
+      li.appendChild(txt);
+
+      var del = el('button', 'del', '删除');
+      del.type = 'button';
+      del.setAttribute('aria-label', '删除第 ' + (i + 1) + ' 条');
+      del.addEventListener('click', function () {
+        state.entries.splice(i, 1);
+        persist();
+        renderList();
+        toast('已删除');
+      });
+      li.appendChild(del);
+      listEl.appendChild(li);
+    });
+
+    countEl.textContent = String(state.entries.length);
+    emptyEl.style.display = state.entries.length ? 'none' : 'block';
+    updatePreview();
+  }
+
+  /* ---------- 复制 ---------- */
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { ta.setSelectionRange(0, ta.value.length); } catch (e) {}
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function copyText(text) {
+    return new Promise(function (resolve) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          function () { resolve(true); },
+          function () { resolve(fallbackCopy(text)); }
+        );
+      } else {
+        resolve(fallbackCopy(text));
+      }
+    });
+  }
+
+  function selectPreview() {
+    try {
+      var r = document.createRange();
+      r.selectNodeContents(previewEl);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+    } catch (e) {}
+  }
+
+  function afterCopy(ok) {
+    if (ok) { toast('已复制到剪贴板'); return; }
+    toast('浏览器拦截了自动复制，已帮你选中，请按 Ctrl+C / 长按复制');
+    selectPreview();
+  }
+
+  /* ---------- 事件 ---------- */
+  tabsEl.addEventListener('click', function (ev) {
+    var btn = ev.target.closest ? ev.target.closest('.tab') : null;
+    if (!btn) return;
+    var t = btn.getAttribute('data-type');
+    if (!TYPES[t] || t === state.type) return;
+    saveDraft();
+    state.type = t;
+    persist();
+    renderForm();
+    updatePreview();
+  });
+
+  fieldsEl.addEventListener('input', function () {
+    saveDraft();
+    updatePreview();
+  });
+
+  capBox.addEventListener('change', function () {
+    state.capWest = !!capBox.checked;
+    persist();
+    renderList();
+  });
+
+  $('btn-demo').addEventListener('click', function () {
+    var demo = DEMO[state.type] || {};
+    TYPES[state.type].fields.forEach(function (f) {
+      var inp = $('f-' + f.k);
+      if (inp) inp.value = demo[f.k] != null ? demo[f.k] : '';
+    });
+    saveDraft();
+    updatePreview();
+    toast('已填入示例，可直接改');
+  });
+
+  $('btn-add').addEventListener('click', function () {
+    var data = readForm();
+    var v = validate(state.type, data);
+    if (v.missing.length) {
+      toast('还差：' + v.missing.join('、'));
+      flash(v.missingKeys);
+      return;
+    }
+    state.entries.push({ type: state.type, data: data });
+    persist();
+    renderList();
+    toast('已加入，共 ' + state.entries.length + ' 条');
+  });
+
+  $('btn-copy-one').addEventListener('click', function () {
+    var data = readForm();
+    if (validate(state.type, data).missing.length) { toast('请先填完带 * 的必填项'); return; }
+    var text = '[' + (state.entries.length + 1) + '] ' + formatEntry(state.type, data, { capWest: state.capWest });
+    copyText(text).then(afterCopy);
+  });
+
+  $('btn-copy-all').addEventListener('click', function () {
+    if (!state.entries.length) { toast('列表还是空的，先加入一条吧'); return; }
+    copyText(formatAll(state.entries, { capWest: state.capWest })).then(afterCopy);
+  });
+
+  $('btn-clear').addEventListener('click', function () {
+    if (!state.entries.length) { toast('列表已经是空的了'); return; }
+    if (!window.confirm('确定清空全部 ' + state.entries.length + ' 条引用？此操作不可撤销。')) return;
+    state.entries = [];
+    persist();
+    renderList();
+    toast('已清空');
+  });
+
+  /* ---------- 启动 ---------- */
+  capBox.checked = state.capWest;
+  renderForm();
+  renderList();
+})();
+</script>
+</body>
+</html>

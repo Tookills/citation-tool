@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2563eb">
+<meta name="description" content="按 GB/T 7714-2015 一键生成规范参考文献，五类文献、手机可用、纯本地运行不上传。">
+<title>参考文献一键格式化 · 写论文前先把格式搞定</title>
+<style>
+  :root{
+    --bg:#f6f8fc; --card:#fff; --ink:#0f172a; --muted:#64748b;
+    --accent:#2563eb; --accent-dark:#1d4ed8; --line:#e2e8f0;
+    --ok:#059669; --warn:#b45309; --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px}
+
+  /* 顶栏 */
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;letter-spacing:.2px}
+  .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#2563eb,#60a5fa);
+        display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;flex:none}
+  .nav a.cta{font-size:14px;padding:8px 16px;border-radius:999px;background:var(--ink);color:#fff;white-space:nowrap}
+  .nav a.cta:hover{background:#1e293b}
+
+  /* 首屏 */
+  .hero{padding:36px 0 10px}
+  .tag{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:#1e40af;background:#e8efff;
+       border:1px solid #d3e0ff;padding:5px 12px;border-radius:999px;margin-bottom:20px}
+  h1{font-size:clamp(28px,6vw,44px);line-height:1.22;margin:0 0 16px;letter-spacing:-.5px}
+  h1 em{font-style:normal;color:var(--accent)}
+  .lede{font-size:clamp(15px,2.6vw,17.5px);color:#334155;margin:0 0 26px;max-width:34em}
+  .lede b{color:var(--ink)}
+  .lede code,.note code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88em;
+       background:#eef2ff;color:#1e40af;padding:1px 5px;border-radius:4px}
+
+  .cta-row{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:14px}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:600;
+       font-size:16.5px;padding:14px 30px;border-radius:12px;box-shadow:0 6px 18px rgba(37,99,235,.25);transition:.18s}
+  .btn:hover{background:var(--accent-dark);transform:translateY(-1px);box-shadow:0 8px 22px rgba(37,99,235,.32)}
+  .btn .arrow{transition:transform .18s}
+  .btn:hover .arrow{transform:translateX(3px)}
+  .note{font-size:13px;color:var(--muted)}
+
+  /* 二维码 */
+  .qr{display:flex;align-items:center;gap:14px;margin:6px 0 0}
+  .qr a{display:block;line-height:0}
+  .qr img{width:120px;height:120px;border-radius:10px;background:#fff;padding:6px;border:1px solid var(--line)}
+  .qr figcaption{font-size:12.5px;color:var(--muted);max-width:9em;line-height:1.5}
+  .qr.no-qr img{display:none}
+  .qr-qr{width:120px;height:120px;border:1.5px dashed #cbd5e1;border-radius:10px;display:none;place-items:center;
+         font-size:11px;color:#94a3b8;text-align:center;line-height:1.4;background:#fff}
+  .qr.no-qr .qr-qr{display:grid}
+
+  /* 卡片通用 */
+  section{padding:44px 0}
+  .sec-title{font-size:clamp(19px,3.4vw,23px);margin:0 0 6px;letter-spacing:-.2px}
+  .sec-sub{color:var(--muted);font-size:14.5px;margin:0 0 22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+
+  /* 前后对比 */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .pane{padding:16px 18px;border-radius:12px;font-size:14px;line-height:1.75;word-break:break-word}
+  .pane h3{font-size:12.5px;font-weight:700;margin:0 0 10px;letter-spacing:.3px;display:flex;align-items:center;gap:6px}
+  .before{background:#fff5f5;border:1px solid #fecaca}
+  .before h3{color:#b91c1c}
+  .after{background:#f0fdf6;border:1px solid #bbf7d0}
+  .after h3{color:var(--ok)}
+  .pane code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13.5px}
+
+  /* 步骤 */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;counter-reset:step}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .step .n{width:26px;height:26px;border-radius:50%;background:#e8efff;color:var(--accent);
+           font-size:13px;font-weight:700;display:grid;place-items:center;margin-bottom:10px}
+  .step h4{margin:0 0 6px;font-size:15px}
+  .step p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.65}
+
+  /* 特性 */
+  .feats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .feat .ico{font-size:20px;line-height:1;margin-bottom:10px}
+  .feat h4{margin:0 0 6px;font-size:15px}
+  .feat p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.65}
+
+  /* 边界 */
+  .limits{background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius);padding:18px 20px}
+  .limits h3{margin:0 0 8px;font-size:15px;color:#92400e}
+  .limits ul{margin:0;padding-left:20px;color:#78350f;font-size:14px}
+  .limits li{margin:3px 0}
+
+  /* 结尾 CTA */
+  .end{text-align:center;padding:20px 0 10px}
+  .end p{color:var(--muted);font-size:14px;margin:0 0 16px}
+
+  footer{border-top:1px solid var(--line);margin-top:44px;padding:26px 0 40px;
+         color:#94a3b8;font-size:12.5px;line-height:1.9;text-align:center}
+  footer a{color:#94a3b8;text-decoration:underline}
+
+  @media (max-width:640px){
+    .compare,.steps,.feats{grid-template-columns:1fr}
+    .hero{padding:22px 0 6px}
+    .btn{width:100%;justify-content:center}
+    .cta-row{gap:16px}
+    section{padding:34px 0}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <nav class="nav">
+    <div class="brand"><span class="mark">[J]</span>参考文献一键格式化</div>
+    <a class="cta" href="app.html">打开应用</a>
+  </nav>
+
+  <header class="hero">
+    <span class="tag">● GB/T 7714-2015 著录规则</span>
+    <h1>把乱格式的文献，<br><em>一键</em>变成规范引用</h1>
+    <p class="lede">
+      从知网、谷歌学术导出的参考文献，作者排序、标点、<code>[J]</code> <code>[M]</code> 类型标识经常是乱的。
+      这个工具让你<b>按类型填几个空，三秒生成一条能直接粘进论文的引用</b>——不用背格式，不用来回翻标准。
+    </p>
+
+    <div class="cta-row">
+      <a class="btn" href="app.html">开始使用<span class="arrow">→</span></a>
+      <span class="note">无需注册 · 不用下载 · 手机也能用</span>
+    </div>
+
+    <figure class="qr">
+      <a href="qr.png" target="_blank" rel="noopener" title="扫码打不开？点这里看大图">
+        <img src="qr.png" alt="手机扫二维码直接使用" onerror="this.parentNode.parentNode.classList.add('no-qr')">
+      </a>
+      <div class="qr-qr">二维码<br>部署后放置</div>
+      <figcaption>手机扫码<br>直接打开</figcaption>
+    </figure>
+  </header>
+
+  <section>
+    <h2 class="sec-title">它到底帮你改了什么</h2>
+    <p class="sec-sub">下面这条是真实测试用例，左边是原始样子，右边是工具输出。</p>
+    <div class="compare">
+      <div class="pane before">
+        <h3>✕ 从数据库里复制出来的样子</h3>
+        <code>李明,王强,张伟,刘洋.基于深度学习的图像识别方法研究.计算机应用研究,2022,39(7):2100-2105</code>
+      </div>
+      <div class="pane after">
+        <h3>✓ 工具生成的结果</h3>
+        <code>李明, 王强, 张伟, 等. 基于深度学习的图像识别方法研究[J]. 计算机应用研究, 2022, 39(7): 2100-2105.</code>
+      </div>
+    </div>
+    <p class="note" style="margin-top:12px">四位作者只留前三位加「等」、期刊标识 <code>[J]</code>、卷期页码的标点位置——这些细节规则工具已经替你处理好了。</p>
+  </section>
+
+  <section>
+    <h2 class="sec-title">三步就够了</h2>
+    <p class="sec-sub">不需要学习成本，第一次用也能直接上手。</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h4>选文献类型</h4><p>期刊、专著、学位论文、会议论文、网络资源，五类覆盖课程论文的绝大多数场景。</p></div>
+      <div class="step"><div class="n">2</div><h4>填信息</h4><p>作者、标题、刊名、年卷期页。少填了会提示，填错了（比如年份写成两位）会标黄。</p></div>
+      <div class="step"><div class="n">3</div><h4>复制</h4><p>生成结果实时预览，点一下复制。多条可以攒成列表，最后一次性全部复制走。</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec-title">为什么它能做到「不翻车」</h2>
+    <p class="sec-sub">功能刻意做得很少，因为稳定的一个小工具，比一堆用不上的花功能更值钱。</p>
+    <div class="feats">
+      <div class="feat"><div class="ico">🔒</div><h4>数据不出浏览器</h4><p>纯前端运行，没有服务器、没有账号、没有上传。你填的文献信息只存在自己电脑上。</p></div>
+      <div class="feat"><div class="ico">📱</div><h4>手机直接能用</h4><p>不用装 App，扫码打开就是完整功能，输入框不会横向溢出，单手也能操作。</p></div>
+      <div class="feat"><div class="ico">📶</div><h4>断网也不怕</h4><p>没有任何外部依赖，不加载字体、图标和脚本。演示时网络出问题也不影响使用。</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="limits">
+      <h3>它不做什么（说清楚边界）</h3>
+      <ul>
+        <li>不做文献管理，不保存你的文献库</li>
+        <li>不解析 PDF，不从 DOI 自动抓取信息</li>
+        <li>不做查重、不做排版、不生成参考文献表以外的内容</li>
+        <li>只负责一件事：把一条文献，变成符合 GB/T 7714-2015 的规范引用</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="end">
+    <p>写论文前，先把格式这件事解决掉。</p>
+    <a class="btn" href="app.html">打开应用<span class="arrow">→</span></a>
+  </div>
+
+  <footer>
+    <!-- 要署名就改这一行 -->
+    课程作业 · 参考文献格式工具 · 2026 年 11 月<br>
+    本页与应用均为纯前端页面，不收集任何数据 · <a href="app.html">直接进入应用</a>
+  </footer>
+
+</div>
+
+</body>
+</html>
